@@ -63,8 +63,8 @@ def run_mutpy(parser):
         mutation_controller = build_controller(cfg)
         mutation_controller.run()
         if cfg.fuzz:
-            print('Fuzzing...')
-            mutation_controller.fuzz()
+            print('[*] Start Fuzzing...')
+            print(mutation_controller.fuzz())
     else:
         parser.print_usage()
 
@@ -84,7 +84,7 @@ def build_controller(cfg):
         timeout_factor=cfg.timeout_factor,
         disable_stdout=cfg.disable_stdout,
         mutate_covered=cfg.coverage,
-        mutation_number=cfg.mutation_number,
+        mutation_number=cfg.mutation_number
     )
 
 

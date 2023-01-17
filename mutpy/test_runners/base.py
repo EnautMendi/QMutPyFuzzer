@@ -173,6 +173,12 @@ class BaseTestRunner:
         result = self.run_mutation_test_runner(suite, total_duration)
         timer.stop()
         return result, timer.duration
+    def run_tests_with_mutant_fuzz(self, total_duration, mutant_module):
+        suite = self.create_test_suite(mutant_module)
+        timer = utils.Timer()
+        result = self.run_mutation_test_runner(suite, total_duration)
+        timer.stop()
+        return result, timer.duration
 
     def run_mutation_test_runner(self, suite, total_duration):
         live_time = self.timeout_factor * (total_duration if total_duration > 1 else 1)

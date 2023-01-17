@@ -75,13 +75,13 @@ class MutationController(views.ViewNotifier):
     def run_mutation_process(self):
         try:
             test_modules, total_duration, number_of_tests = self.load_and_check_tests()
-
             self.notify_passed(test_modules, number_of_tests)
-            self.notify_start()
 
+            self.notify_start()
             self.score = MutationScore()
 
             for target_module, to_mutate in self.target_loader.load([module for module, *_ in test_modules]):
+
                 self.mutate_module(target_module, to_mutate, total_duration)
         except KeyboardInterrupt:
             pass
@@ -119,7 +119,8 @@ class MutationController(views.ViewNotifier):
             self.notify_mutation(mutation_number, mutations, target_module, mutant_ast)
             mutant_module = self.create_mutant_module(target_module, mutant_ast)
             if mutant_module:
-                self.run_tests_with_mutant(total_duration, mutant_module, mutations, coverage_result, mutant_ast)
+                self.run_tests_with_mutant(total_duration, mutant_module, mutations, coverage_result)
+
             else:
                 self.score.inc_incompetent()
 
@@ -143,7 +144,7 @@ class MutationController(views.ViewNotifier):
             self.notify_incompetent(0, exception, tests_run=0)
             return None
 
-    def run_tests_with_mutant(self, total_duration, mutant_module, mutations, coverage_result, mutant_ast):
+    def run_tests_with_mutant(self, total_duration, mutant_module, mutations, coverage_result):
         result, duration = self.runner.run_tests_with_mutant(total_duration, mutant_module, mutations, coverage_result)
 
         self.update_score_and_notify_views(result, duration, mutant_module)
@@ -154,9 +155,9 @@ class MutationController(views.ViewNotifier):
         elif result.is_incompetent:
             self.update_incompetent_mutant(result, mutant_duration)
         elif result.is_survived:
+            self.survived_mutants.add(mutant_module)
             self.update_survived_mutant(result, mutant_duration)
         else:
-            self.survived_mutants.add(mutant_module)
             self.update_killed_mutant(result, mutant_duration)
 
     def update_timeout_mutant(self, duration):
@@ -169,7 +170,6 @@ class MutationController(views.ViewNotifier):
 
     def update_survived_mutant(self, result, duration):
         self.notify_survived(duration, result.tests_run)
-
         self.score.inc_survived()
 
     def update_killed_mutant(self, result, duration):
@@ -178,8 +178,11 @@ class MutationController(views.ViewNotifier):
 
     def fuzz(self):
         print(self.survived_mutants)
-        print(self.test_loader)
-        return
+        for mutant in self.survived_mutants:
+            result, duration = self.runner.run_tests_with_mutant_fuzz(100,mutant)
+            print(result.is_survived)
+            print(result.killer)
+        return result, duration
 
 class HOMStrategy:
 
