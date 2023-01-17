@@ -56,6 +56,7 @@ class MutationController(views.ViewNotifier):
         self.timeout_factor = timeout_factor
         self.stdout_manager = utils.StdoutManager(disable_stdout)
         self.mutation_number = mutation_number
+        self.survived_mutants = set(())
         self.runner = runner_cls(self.test_loader, self.timeout_factor, self.stdout_manager, mutate_covered)
 
     def run(self):
@@ -145,9 +146,9 @@ class MutationController(views.ViewNotifier):
     def run_tests_with_mutant(self, total_duration, mutant_module, mutations, coverage_result, mutant_ast):
         result, duration = self.runner.run_tests_with_mutant(total_duration, mutant_module, mutations, coverage_result)
 
-        self.update_score_and_notify_views(result, duration, mutant_ast)
+        self.update_score_and_notify_views(result, duration, mutant_module)
 
-    def update_score_and_notify_views(self, result, mutant_duration, mutant_ast):
+    def update_score_and_notify_views(self, result, mutant_duration, mutant_module):
         if not result:
             self.update_timeout_mutant(mutant_duration)
         elif result.is_incompetent:
@@ -155,10 +156,7 @@ class MutationController(views.ViewNotifier):
         elif result.is_survived:
             self.update_survived_mutant(result, mutant_duration)
         else:
-            os.makedirs("survived_mutants", exist_ok=True)
-            code = codegen.to_source(mutant_ast)
-            with open("survived_mutants/mutant.py", 'w') as mutant_file:
-                mutant_file.write(code)
+            self.survived_mutants.add(mutant_module)
             self.update_killed_mutant(result, mutant_duration)
 
     def update_timeout_mutant(self, duration):
@@ -178,6 +176,10 @@ class MutationController(views.ViewNotifier):
         self.notify_killed(duration, result.killer, result.exception_traceback, result.tests_run)
         self.score.inc_killed()
 
+    def fuzz(self):
+        print(self.survived_mutants)
+        print(self.test_loader)
+        return
 
 class HOMStrategy:
 

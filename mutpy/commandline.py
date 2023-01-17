@@ -64,6 +64,7 @@ def run_mutpy(parser):
         mutation_controller.run()
         if cfg.fuzz:
             print('Fuzzing...')
+            mutation_controller.fuzz()
     else:
         parser.print_usage()
 
