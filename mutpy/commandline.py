@@ -1,6 +1,7 @@
 import argparse
+import json
 import sys
-
+import os
 from mutpy import __version__ as version
 from mutpy import controller, views, operators, utils
 
@@ -63,10 +64,75 @@ def run_mutpy(parser):
         mutation_controller = build_controller(cfg)
         mutation_controller.run()
         if cfg.fuzz:
-            print('[*] Start Fuzzing...')
-            print(mutation_controller.fuzz())
+            if cfg.runner == 'unittest':
+                newTests = []
+                count = 0
+                for test in cfg.unit_test:
+                    count = count + 1
+                    newfile = "tmp" + str(count) + ".py"
+                    create_new_test(test, newfile)
+                    newTests.append(newfile)
+                test_loader = utils.ModulesLoader(newTests, cfg.path)
+                runner_cls = get_runner_cls(cfg.runner)
+                print('[*] Start Fuzzing...')
+                print('Result:')
+                print(mutation_controller.fuzz(test_loader, runner_cls, cfg.coverage))
+                for test in newTests:
+                    os.remove(test)
+
+            else:
+                print("The fuzzer option is supported only for Unittest")
     else:
         parser.print_usage()
+
+def create_new_test(test, newFile):
+    parts = test.split('.')
+    path = '/'.join(parts)
+    testFile = path+".py"
+    f = open(testFile, "r")
+    copy = open(newFile, "w+")
+    condition = 0
+    lines = []
+    for line in f:
+        condition = checkLine(line, condition)
+        if condition == 1:
+            lines.append(line)
+        elif condition == 2:
+            lines.append(line)
+            lines = ''.join(lines)
+            newline = create_inputs(lines)
+            copy.write(newline)
+            lines = []
+        else:
+            copy.write(line)
+    f.close()
+    copy.close()
+
+def checkLine(line, condition):
+    if "@idata" in line:
+        condition = 1
+    elif "@unpack" in line:
+        condition = 2
+    elif condition == 1:
+        condition = 1
+    else:
+        condition = 0
+    return condition
+
+def create_inputs(lines):
+    splited_lines = lines.split('(')
+    splited_lines = splited_lines[1].split(')')
+    data = splited_lines[0].replace('\n','')
+    data = data.replace('  ','')
+    data = data.replace(',]', ']')
+    print(data)
+    try:
+        data = json.loads(data)
+    except ValueError as e:
+        return lines
+    print(data)
+    return lines
+
 
 
 def build_controller(cfg):
