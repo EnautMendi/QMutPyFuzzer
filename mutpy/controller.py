@@ -1,9 +1,8 @@
 import json
-import random
 import sys
-import os
 from mutpy import views, utils, codegen
 import random
+import string
 
 
 
@@ -191,6 +190,9 @@ class FuzzController():
     def __init__(self):
         super().__init__()
         self.newintegers = list(())
+        self.newstrings = list(())
+        self.newlists = list(())
+        self.newbackends = list(())
 
     def create_inputs(self, lines, shots):
         splited_lines = lines.split('(')
@@ -232,6 +234,28 @@ class FuzzController():
         for _ in range(shots):
             value = random.randint(0, 10000)
             self.newintegers.append(value)
+        pass
+
+    def getstrings(self, shots):
+        for _ in range(shots):
+            value = ''.join(random.choices(string.ascii_letters, k=random.randint(0, 20)))
+            self.newstrings.append(value)
+        pass
+
+    def getlists(self, shots, len):
+        for _ in range(shots):
+            newlist = list(())
+            for x in range(len):
+                value = random.randint(0, 10000)
+                newlist.append(value)
+            self.newlists.append(newlist)
+        pass
+
+    def getbackends(self, shots):
+        backends = ["",]
+        for _ in range(shots):
+            value = backends[random.randint(0, 5)]
+            self.newbackends.append(value)
         pass
 
 class HOMStrategy:

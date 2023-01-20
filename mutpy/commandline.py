@@ -75,8 +75,13 @@ def run_mutpy(parser):
                 test_loader = utils.ModulesLoader(newTests, cfg.path)
                 runner_cls = get_runner_cls(cfg.runner)
                 print('[*] Start Fuzzing...')
-                print('Result:')
-                print(mutation_controller.fuzz(test_loader, runner_cls, cfg.coverage))
+                end = False
+                while end == False:
+                    result = mutation_controller.fuzz(test_loader, runner_cls, cfg.coverage)
+                    #if result.killer:
+                        #end = True
+                    print('Result:')
+                    print(result)
                 for test in newTests:
                     os.remove(test)
 
