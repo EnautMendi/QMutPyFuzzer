@@ -67,19 +67,19 @@ def run_mutpy(parser):
             if cfg.runner == 'unittest':
                 end = False
                 print('[*] Start Fuzzing...')
+                count=0
                 while end == False:
-                    newTests = []
-                    count = 0
+                    newTests = list(())
+                    count=count + 1
+                    count2 = 0
                     print('Create new inputs for tests')
                     for test in cfg.unit_test:
-                        count = count + 1
-                        newfile = "tmp" + str(count) + ".py"
+                        count2 = count2 + 1
+                        newfile = "tmp_" + str(count) + "_" + str(count2) + ".py"
                         create_new_test(test, newfile)
                         newTests.append(newfile)
                     test_loader = utils.ModulesLoader(newTests, cfg.path)
                     runner_cls = get_runner_cls(cfg.runner)
-                    
-
                     result = mutation_controller.fuzz(test_loader, runner_cls, cfg.coverage)
                     #if result.killer:
                         #end = True
@@ -87,7 +87,7 @@ def run_mutpy(parser):
                     print(result)
                     for test in newTests:
                         os.remove(test)
-
+                    newTests.clear()
             else:
                 print("The fuzzer option is supported only for Unittest")
     else:

@@ -183,6 +183,7 @@ class MutationController(views.ViewNotifier):
         self.runner = runner_cls(test_loader, self.timeout_factor, self.stdout_manager, mutate_covered)
         for mutant in self.survived_mutants:
             result, duration = self.runner.run_tests_with_mutant_fuzz(100,mutant)
+
         return result, duration
 
 class FuzzController():
