@@ -1,7 +1,10 @@
+import json
 import random
 import sys
 import os
 from mutpy import views, utils, codegen
+import random
+
 
 
 class TestsFailAtOriginal(Exception):
@@ -182,6 +185,54 @@ class MutationController(views.ViewNotifier):
         for mutant in self.survived_mutants:
             result, duration = self.runner.run_tests_with_mutant_fuzz(100,mutant)
         return result, duration
+
+class FuzzController():
+
+    def __init__(self):
+        super().__init__()
+        self.newintegers = list(())
+
+    def create_inputs(self, lines, shots):
+        splited_lines = lines.split('(')
+        splited_lines2 = splited_lines[1].split(')')
+        data = splited_lines2[0].replace('\n', '')
+        data = data.replace('  ', '')
+        data = data.replace(',]', ']')
+        try:
+            data = json.loads(data)
+        except ValueError as e:
+            return lines
+        newdata = list((data))
+        input= data[0]
+        if type(input) is list:
+            for value in input:
+                if type(value) is int:
+                    if len(newdata) == len(data):
+                        self.newintegers.clear()
+                        self.getintegers(shots)
+                        for x in range(shots):
+                            newdata.append(list(()))
+                            newdata[len(data)+x].append(self.newintegers[x])
+                    else:
+                        self.newintegers.clear()
+                        self.getintegers(shots)
+                        for y in range(len(data), len(newdata)):
+                            newdata[y].append(self.newintegers[y - len(data)])
+                # elif value is str:
+                # elif value is list:
+                else:
+                    return lines
+        else:
+            return lines
+        lines = splited_lines[0] + "(" + str(newdata) + ")\n"
+
+        return lines
+
+    def getintegers(self, shots):
+        for _ in range(shots):
+            value = random.randint(0, 10000)
+            self.newintegers.append(value)
+        pass
 
 class HOMStrategy:
 

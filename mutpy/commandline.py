@@ -86,6 +86,7 @@ def run_mutpy(parser):
         parser.print_usage()
 
 def create_new_test(test, newFile):
+    fuzzer = controller.FuzzController()
     parts = test.split('.')
     path = '/'.join(parts)
     testFile = path+".py"
@@ -98,10 +99,10 @@ def create_new_test(test, newFile):
         if condition == 1:
             lines.append(line)
         elif condition == 2:
-            lines.append(line)
             lines = ''.join(lines)
-            newline = create_inputs(lines)
+            newline = fuzzer.create_inputs(lines, 100)
             copy.write(newline)
+            copy.write(line)
             lines = []
         else:
             copy.write(line)
@@ -118,20 +119,6 @@ def checkLine(line, condition):
     else:
         condition = 0
     return condition
-
-def create_inputs(lines):
-    splited_lines = lines.split('(')
-    splited_lines = splited_lines[1].split(')')
-    data = splited_lines[0].replace('\n','')
-    data = data.replace('  ','')
-    data = data.replace(',]', ']')
-    print(data)
-    try:
-        data = json.loads(data)
-    except ValueError as e:
-        return lines
-    print(data)
-    return lines
 
 
 
