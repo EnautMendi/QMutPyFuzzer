@@ -65,6 +65,8 @@ def run_mutpy(parser):
         mutation_controller.run()
         if cfg.fuzz:
             if cfg.runner == 'unittest':
+                start = len(mutation_controller.survived_mutants)
+                print('Number of mutants that survived: ' + str(start))
                 end = False
                 print('[*] Start Fuzzing...')
                 count=0
@@ -80,14 +82,14 @@ def run_mutpy(parser):
                         newTests.append(newfile)
                     test_loader = utils.ModulesLoader(newTests, cfg.path)
                     runner_cls = get_runner_cls(cfg.runner)
-                    result = mutation_controller.fuzz(test_loader, runner_cls, cfg.coverage)
-                    #if result.killer:
-                        #end = True
-                    print('Result for new inputs:')
-                    print(result)
+                    end = mutation_controller.fuzz(test_loader, runner_cls, cfg.coverage)
+
                     for test in newTests:
                         os.remove(test)
                     newTests.clear()
+                left= len(mutation_controller.survived_mutants)
+                print('Number of mutants that were killed by the fuzzer: ' + str(start - left))
+                print('Number of mutants still not killed: ' + str(left))
             else:
                 print("The fuzzer option is supported only for Unittest")
     else:

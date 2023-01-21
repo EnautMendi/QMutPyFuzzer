@@ -179,12 +179,22 @@ class MutationController(views.ViewNotifier):
         self.score.inc_killed()
 
     def fuzz(self, test_loader, runner_cls, mutate_covered):
-
+        end=False
+        toremove=list(())
         self.runner = runner_cls(test_loader, self.timeout_factor, self.stdout_manager, mutate_covered)
         for mutant in self.survived_mutants:
             result, duration = self.runner.run_tests_with_mutant_fuzz(100,mutant)
+            print('Result for ' + str(mutant) + ' with new inputs:')
+            print(result)
+            if result.is_survived==False:
+                if result.killer: #Insert here all the exception we must consider as killer or not
+                    toremove.append(mutant)
+        for x in toremove:
+            self.survived_mutants.remove(x)
+        if len(self.survived_mutants)==0:
+            end = True
 
-        return result, duration
+        return end
 
 class FuzzController():
 
@@ -193,7 +203,7 @@ class FuzzController():
         self.newintegers = list(())
         self.newstrings = list(())
         self.newlists = list(())
-        self.newbackends = list(())
+        self.newunknown = list(())
 
     def create_inputs(self, lines, shots):
         splited_lines = lines.split('(')
@@ -209,6 +219,8 @@ class FuzzController():
         input= data[0]
         if type(input) is list:
             for value in input:
+                print(value)
+                print(type(value))
                 if type(value) is int:
                     if len(newdata) == len(data):
                         self.newintegers.clear()
@@ -221,10 +233,42 @@ class FuzzController():
                         self.getintegers(shots)
                         for y in range(len(data), len(newdata)):
                             newdata[y].append(self.newintegers[y - len(data)])
-                # elif value is str:
-                # elif value is list:
+                elif type(value) is str:
+                    if len(newdata) == len(data):
+                        self.newstrings.clear()
+                        self.getstrings(shots)
+                        for x in range(shots):
+                            newdata.append(list(()))
+                            newdata[len(data)+x].append(self.newstrings[x])
+                    else:
+                        self.newstrings.clear()
+                        self.getstrings(shots)
+                        for y in range(len(data), len(newdata)):
+                            newdata[y].append(self.newstrings[y - len(data)])
+                elif type(value) is list:
+                    if len(newdata) == len(data):
+                        self.newlists.clear()
+                        self.getlists(shots, value)
+                        for x in range(shots):
+                            newdata.append(list(()))
+                            newdata[len(data) + x].append(self.newlists[x])
+                    else:
+                        self.newlists.clear()
+                        self.getlists(shots, value)
+                        for y in range(len(data), len(newdata)):
+                            newdata[y].append(self.newlists[y - len(data)])
                 else:
-                    return lines
+                    if len(newdata) == len(data):
+                        self.newunknown.clear()
+                        self.getunknowntype(shots, value)
+                        for x in range(shots):
+                            newdata.append(list(()))
+                            newdata[len(data) + x].append(self.newunknown[x])
+                    else:
+                        self.newunknown.clear()
+                        self.getunknowntype(shots, value)
+                        for y in range(len(data), len(newdata)):
+                            newdata[y].append(self.newunknown[y - len(data)])
         else:
             return lines
         lines = splited_lines[0] + "(" + str(newdata) + ")\n"
@@ -243,21 +287,20 @@ class FuzzController():
             self.newstrings.append(value)
         pass
 
-    def getlists(self, shots, len):
+    def getunknowntype(self, shots, seed):
+        for _ in range(shots):
+            self.newunknown.append(seed)
+        pass
+
+    def getlists(self, shots, seed):
         for _ in range(shots):
             newlist = list(())
-            for x in range(len):
+            for x in range(len(seed)):
                 value = random.randint(0, 10000)
                 newlist.append(value)
             self.newlists.append(newlist)
         pass
 
-    def getbackends(self, shots):
-        backends = ["",]
-        for _ in range(shots):
-            value = backends[random.randint(0, 5)]
-            self.newbackends.append(value)
-        pass
 
 class HOMStrategy:
 
