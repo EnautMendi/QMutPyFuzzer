@@ -180,22 +180,38 @@ class BaseTestRunner:
         killerTests = list(())
         while end is False:
             suite = self.create_test_suite(mutant_module)
-            print(suite.suite)
-            print(killerTests)
-            for killer in killerTests:
-                for test in suite.suite:
-                    print(test)
-                    if test.testMethod == killer:
-                        suite.skip_test(test)
+            count = 0
+            print("Test killers: " + str(killerTests))
+            refactorsuite = list(())
+            for tests in suite.suite:
+                refactortestslist = list(())
+                count = count + 1
+                count2 = 0
+                for test in tests:
+                    teststr = str(test)
+                    splitedtest = teststr.split(' ')
+                    if splitedtest[0] in killerTests:
+                        tests._removeTestAtIndex(count2)
+                    count2 = count2 + 1
+                for test in tests:
+                    if not test is None:
+                        refactortestslist.append(test)
+                newsuite = unittest.TestLoader.suiteClass(refactortestslist)
+                print("Test cases: " + str(newsuite.countTestCases()))
+                refactorsuite.append(newsuite)
+
+            newsuitesuite = unittest.TestLoader.suiteClass(refactorsuite)
+            suite.suite = newsuitesuite
             result = self.run_mutation_test_runner(suite, total_duration)
-            if result.is_survived == False:
-                if result.killer: #Insert here all the exception we must consider as killer or not
-                    splited = result.killer.split(' ')
-                    killerTests.append(splited[0])
+            if result:
+                if result.is_survived == False:
+                    if result.killer: #Insert here all the exception we must consider as killer or not
+                        splited = result.killer.split(' ')
+                        killerTests.append(splited[0])
+                    else:
+                        end = True
                 else:
                     end = True
-            else:
-                end = True
         timer.stop()
         return result, timer.duration
 
