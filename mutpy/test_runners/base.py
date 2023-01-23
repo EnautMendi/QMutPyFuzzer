@@ -183,26 +183,36 @@ class BaseTestRunner:
             count = 0
             print("Test killers: " + str(killerTests))
             refactorsuite = list(())
+            nextTest = None
             for tests in suite.suite:
                 refactortestslist = list(())
                 count = count + 1
                 count2 = 0
+                savenext = False
                 for test in tests:
+                    if savenext == True:
+                        savenext = False
+                        teststring = str(test)
+                        splitedteststring = teststring.split(' ')
+                        nextTest = splitedteststring[0]
                     teststr = str(test)
                     splitedtest = teststr.split(' ')
                     if splitedtest[0] in killerTests:
                         tests._removeTestAtIndex(count2)
+                        if splitedtest[0] == killerTests[-1]:
+                            savenext = True
                     count2 = count2 + 1
                 for test in tests:
-                    if not test is None:
+                    if test is not None:
                         refactortestslist.append(test)
                 newsuite = unittest.TestLoader.suiteClass(refactortestslist)
-                print("Test cases: " + str(newsuite.countTestCases()))
                 refactorsuite.append(newsuite)
 
             newsuitesuite = unittest.TestLoader.suiteClass(refactorsuite)
             suite.suite = newsuitesuite
             result = self.run_mutation_test_runner(suite, total_duration)
+            print("Result: " + str(result))
+            #print("Next Test: " + str(nextTest))
             if result:
                 if result.is_survived == False:
                     if result.killer: #Insert here all the exception we must consider as killer or not
@@ -212,6 +222,9 @@ class BaseTestRunner:
                         end = True
                 else:
                     end = True
+            else:
+                if nextTest:
+                    killerTests.append(nextTest)
         timer.stop()
         return result, timer.duration
 
