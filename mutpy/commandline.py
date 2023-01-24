@@ -49,7 +49,12 @@ def build_parser():
     parser.add_argument('--list-hom-strategies', action='store_true', help='list available HOM strategies')
     parser.add_argument('--mutation-number', type=int, metavar='MUTATION_NUMBER',
                         help='run only one mutation (debug purpose)')
-    parser.add_argument('--fuzz', action='store_true', help='fuzz target')
+    parser.add_argument('--fuzz_shots', type=int, metavar='FUZZ_SHOTS',
+                        help='Number of shots want to try for each test per survived mutant while fuzz')
+    parser.add_argument('--int_range', type=int, metavar='INT_RANGE', default=1,
+                        help='The maximun value that a random integer can have while fuzzing')
+    parser.add_argument('--string_range', type=int, metavar='STRING_RANGE', default=2,
+                        help='Number of maximun characters a string can have while fuzzing')
 
     return parser
 
@@ -63,7 +68,7 @@ def run_mutpy(parser):
     elif cfg.target and cfg.unit_test:
         mutation_controller = build_controller(cfg)
         mutation_controller.run()
-        if cfg.fuzz:
+        if cfg.fuzz_shots:
             if cfg.runner == 'unittest':
                 start = len(mutation_controller.survived_mutants)
                 print('Number of mutants that survived: ' + str(start))
@@ -78,7 +83,7 @@ def run_mutpy(parser):
                     for test in cfg.unit_test:
                         count2 = count2 + 1
                         newfile = "tmp_" + str(count) + "_" + str(count2) + ".py"
-                        create_new_test(test, newfile)
+                        create_new_test(test, newfile, cfg.fuzz_shots, cfg.int_range, cfg.string_range)
                         newTests.append(newfile)
                     test_loader = utils.ModulesLoader(newTests, cfg.path)
                     runner_cls = get_runner_cls(cfg.runner)
@@ -94,7 +99,7 @@ def run_mutpy(parser):
     else:
         parser.print_usage()
 
-def create_new_test(test, newFile):
+def create_new_test(test, newFile, shots, range_int, range_strings):
     fuzzer = controller.FuzzController()
     parts = test.split('.')
     path = '/'.join(parts)
@@ -109,7 +114,7 @@ def create_new_test(test, newFile):
             lines.append(line)
         elif condition == 2:
             lines = ''.join(lines)
-            newline = fuzzer.create_inputs(lines, 100)
+            newline = fuzzer.create_inputs(lines, shots, range_int, range_strings)
             copy.write(newline)
             copy.write(line)
             lines = []

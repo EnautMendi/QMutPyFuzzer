@@ -205,7 +205,7 @@ class FuzzController():
         self.newlists = list(())
         self.newunknown = list(())
 
-    def create_inputs(self, lines, shots):
+    def create_inputs(self, lines, shots, range_int, range_strings):
         splited_lines = lines.split('(')
         splited_lines2 = splited_lines[1].split(')')
         data = splited_lines2[0].replace('\n', '')
@@ -222,37 +222,37 @@ class FuzzController():
                 if type(value) is int:
                     if len(newdata) == len(data):
                         self.newintegers.clear()
-                        self.getintegers(shots)
+                        self.getintegers(shots, range_int)
                         for x in range(shots):
                             newdata.append(list(()))
                             newdata[len(data)+x].append(self.newintegers[x])
                     else:
                         self.newintegers.clear()
-                        self.getintegers(shots)
+                        self.getintegers(shots, range_int)
                         for y in range(len(data), len(newdata)):
                             newdata[y].append(self.newintegers[y - len(data)])
                 elif type(value) is str:
                     if len(newdata) == len(data):
                         self.newstrings.clear()
-                        self.getstrings(shots)
+                        self.getstrings(shots, range_strings)
                         for x in range(shots):
                             newdata.append(list(()))
                             newdata[len(data)+x].append(self.newstrings[x])
                     else:
                         self.newstrings.clear()
-                        self.getstrings(shots)
+                        self.getstrings(shots, range_strings)
                         for y in range(len(data), len(newdata)):
                             newdata[y].append(self.newstrings[y - len(data)])
                 elif type(value) is list:
                     if len(newdata) == len(data):
                         self.newlists.clear()
-                        self.getlists(shots, value)
+                        self.getlists(shots, value, range_int, range_strings)
                         for x in range(shots):
                             newdata.append(list(()))
                             newdata[len(data) + x].append(self.newlists[x])
                     else:
                         self.newlists.clear()
-                        self.getlists(shots, value)
+                        self.getlists(shots, value, range_int, range_strings)
                         for y in range(len(data), len(newdata)):
                             newdata[y].append(self.newlists[y - len(data)])
                 else:
@@ -273,15 +273,15 @@ class FuzzController():
 
         return lines
 
-    def getintegers(self, shots):
+    def getintegers(self, shots, range_int):
         for _ in range(shots):
-            value = random.randint(0, 10000)
+            value = random.randint(0, range_int)
             self.newintegers.append(value)
         pass
 
-    def getstrings(self, shots):
+    def getstrings(self, shots, range_string):
         for _ in range(shots):
-            value = ''.join(random.choices(string.ascii_letters, k=random.randint(0, 20)))
+            value = ''.join(random.choices(string.ascii_letters, k=random.randint(0, range_string)))
             self.newstrings.append(value)
         pass
 
@@ -290,11 +290,11 @@ class FuzzController():
             self.newunknown.append(seed)
         pass
 
-    def getlists(self, shots, seed):
+    def getlists(self, shots, seed, range_int, range_string):
         for _ in range(shots):
             newlist = list(())
             for x in range(len(seed)):
-                value = random.randint(0, 10000)
+                value = random.randint(0, range_int)
                 newlist.append(value)
             self.newlists.append(newlist)
         pass
