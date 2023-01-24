@@ -181,7 +181,6 @@ class BaseTestRunner:
         while end is False:
             suite = self.create_test_suite(mutant_module)
             count = 0
-            #print("Test killers: " + str(killerTests))
             refactorsuite = list(())
             nextTest = None
             for tests in suite.suite:
@@ -211,11 +210,9 @@ class BaseTestRunner:
             newsuitesuite = unittest.TestLoader.suiteClass(refactorsuite)
             suite.suite = newsuitesuite
             result = self.run_mutation_test_runner(suite, total_duration)
-            #print("Result: " + str(result))
-            #print("Next Test: " + str(nextTest))
             if result:
                 if result.is_survived == False:
-                    if result.killer and (("input" in str(result.exception_traceback)) or ("Insufficient memory" in str(result.exception_traceback))): #Insert here all the exception we must consider as killer or not
+                    if result.killer and (("input" in str(result.exception_traceback)) or ("Insufficient memory" in str(result.exception_traceback)) or (("BackendNotFoundError") in str(result.exception_traceback))): #Insert here all the exception we must consider as killer or not
                         splited = result.killer.split(' ')
                         killerTests.append(splited[0])
                     else:
