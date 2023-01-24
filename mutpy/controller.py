@@ -178,11 +178,11 @@ class MutationController(views.ViewNotifier):
         self.notify_killed(duration, result.killer, result.exception_traceback, result.tests_run)
         self.score.inc_killed()
 
-    def fuzz(self, test_loader, runner_cls, mutate_covered):
+    def fuzz(self, test_loader, runner_cls, mutate_covered, errors):
         toremove=list(())
         self.runner = runner_cls(test_loader, self.timeout_factor, self.stdout_manager, mutate_covered)
         for mutant in self.survived_mutants:
-            result, duration = self.runner.run_tests_with_mutant_fuzz(100,mutant)
+            result, duration = self.runner.run_tests_with_mutant_fuzz(100,mutant, errors)
             print('Result for ' + str(mutant) + ' with new inputs:')
             print(result)
             if result.is_survived==False:

@@ -70,6 +70,7 @@ def run_mutpy(parser):
         mutation_controller.run()
         if cfg.fuzz_shots:
             if cfg.runner == 'unittest':
+                errors = geterrors()
                 start = len(mutation_controller.survived_mutants)
                 print('Number of mutants that survived: ' + str(start))
                 print('[*] Start Fuzzing...')
@@ -83,7 +84,7 @@ def run_mutpy(parser):
                     newTests.append(newfile)
                 test_loader = utils.ModulesLoader(newTests, cfg.path)
                 runner_cls = get_runner_cls(cfg.runner)
-                mutation_controller.fuzz(test_loader, runner_cls, cfg.coverage)
+                mutation_controller.fuzz(test_loader, runner_cls, cfg.coverage, errors)
                 for test in newTests:
                     os.remove(test)
                 newTests.clear()
@@ -94,7 +95,9 @@ def run_mutpy(parser):
                 print("The fuzzer option is supported only for Unittest")
     else:
         parser.print_usage()
-
+def geterrors():
+    errors = ["input", "Insufficient memory", "BackendNotFoundError"]
+    return errors
 def create_new_test(test, newFile, shots, range_int, range_strings):
     fuzzer = controller.FuzzController()
     parts = test.split('.')

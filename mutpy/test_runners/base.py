@@ -174,7 +174,7 @@ class BaseTestRunner:
         result = self.run_mutation_test_runner(suite, total_duration)
         timer.stop()
         return result, timer.duration
-    def run_tests_with_mutant_fuzz(self, total_duration, mutant_module):
+    def run_tests_with_mutant_fuzz(self, total_duration, mutant_module, errors):
         timer = utils.Timer()
         end = False
         killerTests = list(())
@@ -212,7 +212,8 @@ class BaseTestRunner:
             result = self.run_mutation_test_runner(suite, total_duration)
             if result:
                 if result.is_survived == False:
-                    if result.killer and (("input" in str(result.exception_traceback)) or ("Insufficient memory" in str(result.exception_traceback)) or (("BackendNotFoundError") in str(result.exception_traceback))): #Insert here all the exception we must consider as killer or not
+                    ignore = [error for error in errors if error in str(result.exception_traceback)]
+                    if result.killer and ignore: #Insert here all the exception we must consider as killer or not
                         splited = result.killer.split(' ')
                         killerTests.append(splited[0])
                     else:
