@@ -293,8 +293,13 @@ class FuzzController():
     def getlists(self, shots, seed, range_int, range_string):
         for _ in range(shots):
             newlist = list(())
-            for x in range(len(seed)):
-                value = random.randint(0, range_int)
+            for x in seed:
+                if type(x) is int:
+                    value = random.randint(0, range_int)
+                elif type(x) is str:
+                    value = ''.join(random.choices(string.ascii_letters, k=random.randint(0, range_string)))
+                else:
+                    value = x
                 newlist.append(value)
             self.newlists.append(newlist)
         pass
