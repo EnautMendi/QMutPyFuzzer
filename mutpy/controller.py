@@ -179,7 +179,6 @@ class MutationController(views.ViewNotifier):
         self.score.inc_killed()
 
     def fuzz(self, test_loader, runner_cls, mutate_covered):
-        end = False
         toremove=list(())
         self.runner = runner_cls(test_loader, self.timeout_factor, self.stdout_manager, mutate_covered)
         for mutant in self.survived_mutants:
@@ -191,10 +190,7 @@ class MutationController(views.ViewNotifier):
                     toremove.append(mutant)
         for x in toremove:
             self.survived_mutants.remove(x)
-        if len(self.survived_mutants) == 0:
-            end = True
-
-        return end
+        pass
 
 class FuzzController():
 

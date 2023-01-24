@@ -72,25 +72,21 @@ def run_mutpy(parser):
             if cfg.runner == 'unittest':
                 start = len(mutation_controller.survived_mutants)
                 print('Number of mutants that survived: ' + str(start))
-                end = False
                 print('[*] Start Fuzzing...')
                 count = 0
-                while end is False:
-                    newTests = list(())
+                newTests = list(())
+                print('Create new inputs for tests')
+                for test in cfg.unit_test:
                     count = count + 1
-                    count2 = 0
-                    print('Create new inputs for tests')
-                    for test in cfg.unit_test:
-                        count2 = count2 + 1
-                        newfile = "tmp_" + str(count) + "_" + str(count2) + ".py"
-                        create_new_test(test, newfile, cfg.fuzz_shots, cfg.int_range, cfg.string_range)
-                        newTests.append(newfile)
-                    test_loader = utils.ModulesLoader(newTests, cfg.path)
-                    runner_cls = get_runner_cls(cfg.runner)
-                    end = mutation_controller.fuzz(test_loader, runner_cls, cfg.coverage)
-                    for test in newTests:
-                        os.remove(test)
-                    newTests.clear()
+                    newfile = "tmp_" + str(count) + ".py"
+                    create_new_test(test, newfile, cfg.fuzz_shots, cfg.int_range, cfg.string_range)
+                    newTests.append(newfile)
+                test_loader = utils.ModulesLoader(newTests, cfg.path)
+                runner_cls = get_runner_cls(cfg.runner)
+                mutation_controller.fuzz(test_loader, runner_cls, cfg.coverage)
+                for test in newTests:
+                    os.remove(test)
+                newTests.clear()
                 left = len(mutation_controller.survived_mutants)
                 print('Number of mutants that were killed by the fuzzer: ' + str(start - left))
                 print('Number of mutants still not killed: ' + str(left))
