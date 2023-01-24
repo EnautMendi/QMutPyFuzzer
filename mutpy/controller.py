@@ -185,9 +185,12 @@ class MutationController(views.ViewNotifier):
             result, duration = self.runner.run_tests_with_mutant_fuzz(100,mutant, errors)
             print('Result for ' + str(mutant) + ' with new inputs:')
             print(result)
-            if result.is_survived==False:
-                if result.killer:
-                    toremove.append(mutant)
+            if result:
+                if result.is_survived==False:
+                    if result.killer:
+                        toremove.append(mutant)
+            else:
+                toremove.append(mutant)
         for x in toremove:
             self.survived_mutants.remove(x)
         pass

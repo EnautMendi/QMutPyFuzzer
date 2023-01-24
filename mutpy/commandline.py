@@ -96,7 +96,7 @@ def run_mutpy(parser):
     else:
         parser.print_usage()
 def geterrors():
-    errors = ["input", "Insufficient memory", "BackendNotFoundError"]
+    errors = ["input", "Insufficient memory", "BackendNotFoundError", "ValueError"]
     return errors
 def create_new_test(test, newFile, shots, range_int, range_strings):
     fuzzer = controller.FuzzController()

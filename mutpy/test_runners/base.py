@@ -216,8 +216,8 @@ class BaseTestRunner:
                     if result.killer and ignore: #Insert here all the exception we must consider as killer or not
                         splited = result.killer.split(' ')
                         killerTests.append(splited[0])
+                        print("Ignored exception: " + str(result.exception_traceback))
                     else:
-                        print("Exception: " + str(result.exception_traceback))
                         end = True
                     ignore = None
                 else:
