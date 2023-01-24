@@ -219,6 +219,7 @@ class BaseTestRunner:
                     else:
                         print("Exception: " + str(result.exception_traceback))
                         end = True
+                    ignore = None
                 else:
                     end = True
             else:
