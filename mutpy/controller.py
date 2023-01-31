@@ -188,6 +188,7 @@ class MutationController(views.ViewNotifier):
             if result:
                 if result.is_survived==False:
                     if result.killer:
+                        print('Error traceback: ' + str(result.exception_traceback))
                         toremove.append(mutant)
             else:
                 toremove.append(mutant)
