@@ -1,7 +1,9 @@
-import random
+import json
 import sys
-import os
 from mutpy import views, utils, codegen
+import random
+import string
+
 
 
 class TestsFailAtOriginal(Exception):
@@ -56,6 +58,7 @@ class MutationController(views.ViewNotifier):
         self.timeout_factor = timeout_factor
         self.stdout_manager = utils.StdoutManager(disable_stdout)
         self.mutation_number = mutation_number
+        self.survived_mutants = set(())
         self.runner = runner_cls(self.test_loader, self.timeout_factor, self.stdout_manager, mutate_covered)
 
     def run(self):
@@ -74,13 +77,13 @@ class MutationController(views.ViewNotifier):
     def run_mutation_process(self):
         try:
             test_modules, total_duration, number_of_tests = self.load_and_check_tests()
-
             self.notify_passed(test_modules, number_of_tests)
-            self.notify_start()
 
+            self.notify_start()
             self.score = MutationScore()
 
             for target_module, to_mutate in self.target_loader.load([module for module, *_ in test_modules]):
+
                 self.mutate_module(target_module, to_mutate, total_duration)
         except KeyboardInterrupt:
             pass
@@ -118,7 +121,8 @@ class MutationController(views.ViewNotifier):
             self.notify_mutation(mutation_number, mutations, target_module, mutant_ast)
             mutant_module = self.create_mutant_module(target_module, mutant_ast)
             if mutant_module:
-                self.run_tests_with_mutant(total_duration, mutant_module, mutations, coverage_result, mutant_ast)
+                self.run_tests_with_mutant(total_duration, mutant_module, mutations, coverage_result)
+
             else:
                 self.score.inc_incompetent()
 
@@ -142,23 +146,20 @@ class MutationController(views.ViewNotifier):
             self.notify_incompetent(0, exception, tests_run=0)
             return None
 
-    def run_tests_with_mutant(self, total_duration, mutant_module, mutations, coverage_result, mutant_ast):
+    def run_tests_with_mutant(self, total_duration, mutant_module, mutations, coverage_result):
         result, duration = self.runner.run_tests_with_mutant(total_duration, mutant_module, mutations, coverage_result)
 
-        self.update_score_and_notify_views(result, duration, mutant_ast)
+        self.update_score_and_notify_views(result, duration, mutant_module)
 
-    def update_score_and_notify_views(self, result, mutant_duration, mutant_ast):
+    def update_score_and_notify_views(self, result, mutant_duration, mutant_module):
         if not result:
             self.update_timeout_mutant(mutant_duration)
         elif result.is_incompetent:
             self.update_incompetent_mutant(result, mutant_duration)
         elif result.is_survived:
+            self.survived_mutants.add(mutant_module)
             self.update_survived_mutant(result, mutant_duration)
         else:
-            os.makedirs("survived_mutants", exist_ok=True)
-            code = codegen.to_source(mutant_ast)
-            with open("survived_mutants/mutant.py", 'w') as mutant_file:
-                mutant_file.write(code)
             self.update_killed_mutant(result, mutant_duration)
 
     def update_timeout_mutant(self, duration):
@@ -171,12 +172,136 @@ class MutationController(views.ViewNotifier):
 
     def update_survived_mutant(self, result, duration):
         self.notify_survived(duration, result.tests_run)
-
         self.score.inc_survived()
 
     def update_killed_mutant(self, result, duration):
         self.notify_killed(duration, result.killer, result.exception_traceback, result.tests_run)
         self.score.inc_killed()
+
+    def fuzz(self, test_loader, runner_cls, mutate_covered, errors):
+        toremove=list(())
+        self.runner = runner_cls(test_loader, self.timeout_factor, self.stdout_manager, mutate_covered)
+        for mutant in self.survived_mutants:
+            result, duration = self.runner.run_tests_with_mutant_fuzz(100,mutant, errors)
+            if result:
+                if result.is_survived==False:
+                    if result.killer:
+                        self.notify_killed(duration, result.killer, result.exception_traceback, result.tests_run)
+                        print("\nTraceback: " + str(result.exception_traceback))
+                        toremove.append(mutant)
+            else:
+                toremove.append(mutant)
+        for x in toremove:
+            self.survived_mutants.remove(x)
+        pass
+
+class FuzzController():
+
+    def __init__(self):
+        super().__init__()
+        self.newintegers = list(())
+        self.newstrings = list(())
+        self.newlists = list(())
+        self.newunknown = list(())
+
+    def create_inputs(self, lines, shots, range_int, range_strings):
+        splited_lines = lines.split('(')
+        splited_lines2 = splited_lines[1].split(')')
+        data = splited_lines2[0].replace('\n', '')
+        data = data.replace('  ', '')
+        data = data.replace(',]', ']')
+        try:
+            data = json.loads(data)
+        except ValueError as e:
+            return lines
+        newdata = list((data))
+        input= data[0]
+        if type(input) is list:
+            for value in input:
+                if type(value) is int:
+                    if len(newdata) == len(data):
+                        self.newintegers.clear()
+                        self.getintegers(shots, range_int)
+                        for x in range(shots):
+                            newdata.append(list(()))
+                            newdata[len(data)+x].append(self.newintegers[x])
+                    else:
+                        self.newintegers.clear()
+                        self.getintegers(shots, range_int)
+                        for y in range(len(data), len(newdata)):
+                            newdata[y].append(self.newintegers[y - len(data)])
+                elif type(value) is str:
+                    if len(newdata) == len(data):
+                        self.newstrings.clear()
+                        self.getstrings(shots, range_strings)
+                        for x in range(shots):
+                            newdata.append(list(()))
+                            newdata[len(data)+x].append(self.newstrings[x])
+                    else:
+                        self.newstrings.clear()
+                        self.getstrings(shots, range_strings)
+                        for y in range(len(data), len(newdata)):
+                            newdata[y].append(self.newstrings[y - len(data)])
+                elif type(value) is list:
+                    if len(newdata) == len(data):
+                        self.newlists.clear()
+                        self.getlists(shots, value, range_int, range_strings)
+                        for x in range(shots):
+                            newdata.append(list(()))
+                            newdata[len(data) + x].append(self.newlists[x])
+                    else:
+                        self.newlists.clear()
+                        self.getlists(shots, value, range_int, range_strings)
+                        for y in range(len(data), len(newdata)):
+                            newdata[y].append(self.newlists[y - len(data)])
+                else:
+                    if len(newdata) == len(data):
+                        self.newunknown.clear()
+                        self.getunknowntype(shots, value)
+                        for x in range(shots):
+                            newdata.append(list(()))
+                            newdata[len(data) + x].append(self.newunknown[x])
+                    else:
+                        self.newunknown.clear()
+                        self.getunknowntype(shots, value)
+                        for y in range(len(data), len(newdata)):
+                            newdata[y].append(self.newunknown[y - len(data)])
+        else:
+            return lines
+        lines = splited_lines[0] + "(" + str(newdata) + ")\n"
+
+        return lines
+
+    def getintegers(self, shots, range_int):
+        for _ in range(shots):
+            value = random.randint(0, range_int)
+            self.newintegers.append(value)
+        pass
+
+    def getstrings(self, shots, range_string):
+        for _ in range(shots):
+            value = ''.join(random.choices(string.ascii_letters, k=random.randint(0, range_string)))
+            self.newstrings.append(value)
+        pass
+
+    def getunknowntype(self, shots, seed):
+        for _ in range(shots):
+            self.newunknown.append(seed)
+        pass
+
+    def getlists(self, shots, seed, range_int, range_string):
+        for _ in range(shots):
+            newlist = list(())
+            for x in seed:
+                if type(x) is int:
+                    value = random.randint(0, range_int)
+                elif type(x) is str:
+                    value = ''.join(random.choices(string.ascii_letters, k=random.randint(0, range_string)))
+                else:
+                    value = x
+                newlist.append(value)
+            self.newlists.append(newlist)
+        pass
 
 
 class HOMStrategy:

@@ -1,6 +1,7 @@
 import argparse
+import json
 import sys
-
+import os
 from mutpy import __version__ as version
 from mutpy import controller, views, operators, utils
 
@@ -48,7 +49,12 @@ def build_parser():
     parser.add_argument('--list-hom-strategies', action='store_true', help='list available HOM strategies')
     parser.add_argument('--mutation-number', type=int, metavar='MUTATION_NUMBER',
                         help='run only one mutation (debug purpose)')
-    parser.add_argument('--fuzz', action='store_true', help='fuzz target')
+    parser.add_argument('--fuzz_shots', type=int, metavar='FUZZ_SHOTS',
+                        help='Number of shots want to try for each test per survived mutant while fuzz')
+    parser.add_argument('--int_range', type=int, metavar='INT_RANGE', default=1,
+                        help='The maximun value that a random integer can have while fuzzing')
+    parser.add_argument('--string_range', type=int, metavar='STRING_RANGE', default=2,
+                        help='Number of maximun characters a string can have while fuzzing')
 
     return parser
 
@@ -62,10 +68,71 @@ def run_mutpy(parser):
     elif cfg.target and cfg.unit_test:
         mutation_controller = build_controller(cfg)
         mutation_controller.run()
-        if cfg.fuzz:
-            print('Fuzzing...')
+        if cfg.fuzz_shots:
+            if cfg.runner == 'unittest':
+                errors = geterrors()
+                start = len(mutation_controller.survived_mutants)
+                print('Number of mutants that survived: ' + str(start))
+                print('[*] Start Fuzzing...')
+                count = 0
+                newTests = list(())
+                print('Create new inputs for tests')
+                for test in cfg.unit_test:
+                    count = count + 1
+                    newfile = "tmp_" + str(count) + ".py"
+                    create_new_test(test, newfile, cfg.fuzz_shots, cfg.int_range, cfg.string_range)
+                    newTests.append(newfile)
+                test_loader = utils.ModulesLoader(newTests, cfg.path)
+                runner_cls = get_runner_cls(cfg.runner)
+                mutation_controller.fuzz(test_loader, runner_cls, cfg.coverage, errors)
+                for test in newTests:
+                    os.remove(test)
+                newTests.clear()
+                left = len(mutation_controller.survived_mutants)
+                print('\n[*] Number of mutants that were killed by the fuzzer: ' + str(start - left))
+                print('[*]Number of mutants still alive: ' + str(left))
+            else:
+                print("The fuzzer option is supported only for Unittest")
     else:
         parser.print_usage()
+def geterrors():
+    errors = ["input", "Insufficient memory", "BackendNotFoundError", "ValueError"]
+    return errors
+def create_new_test(test, newFile, shots, range_int, range_strings):
+    fuzzer = controller.FuzzController()
+    parts = test.split('.')
+    path = '/'.join(parts)
+    testFile = path+".py"
+    f = open(testFile, "r")
+    copy = open(newFile, "w+")
+    condition = 0
+    lines = []
+    for line in f:
+        condition = checkLine(line, condition)
+        if condition == 1:
+            lines.append(line)
+        elif condition == 2:
+            lines = ''.join(lines)
+            newline = fuzzer.create_inputs(lines, shots, range_int, range_strings)
+            copy.write(newline)
+            copy.write(line)
+            lines = []
+        else:
+            copy.write(line)
+    f.close()
+    copy.close()
+
+def checkLine(line, condition):
+    if "@idata" in line:
+        condition = 1
+    elif "@unpack" in line:
+        condition = 2
+    elif condition == 1:
+        condition = 1
+    else:
+        condition = 0
+    return condition
+
 
 
 def build_controller(cfg):
@@ -83,7 +150,7 @@ def build_controller(cfg):
         timeout_factor=cfg.timeout_factor,
         disable_stdout=cfg.disable_stdout,
         mutate_covered=cfg.coverage,
-        mutation_number=cfg.mutation_number,
+        mutation_number=cfg.mutation_number
     )
 
 
