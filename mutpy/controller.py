@@ -183,12 +183,11 @@ class MutationController(views.ViewNotifier):
         self.runner = runner_cls(test_loader, self.timeout_factor, self.stdout_manager, mutate_covered)
         for mutant in self.survived_mutants:
             result, duration = self.runner.run_tests_with_mutant_fuzz(100,mutant, errors)
-            print('Result for ' + str(mutant) + ' with new inputs:')
-            print(result)
             if result:
                 if result.is_survived==False:
                     if result.killer:
-                        print('Error traceback: ' + str(result.exception_traceback))
+                        self.notify_killed(duration, result.killer, result.exception_traceback, result.tests_run)
+                        print("\nTraceback: " + str(result.exception_traceback))
                         toremove.append(mutant)
             else:
                 toremove.append(mutant)

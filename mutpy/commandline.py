@@ -89,8 +89,8 @@ def run_mutpy(parser):
                     os.remove(test)
                 newTests.clear()
                 left = len(mutation_controller.survived_mutants)
-                print('Number of mutants that were killed by the fuzzer: ' + str(start - left))
-                print('Number of mutants still not killed: ' + str(left))
+                print('\n[*] Number of mutants that were killed by the fuzzer: ' + str(start - left))
+                print('[*]Number of mutants still alive: ' + str(left))
             else:
                 print("The fuzzer option is supported only for Unittest")
     else:
