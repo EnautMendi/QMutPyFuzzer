@@ -1,4 +1,4 @@
-MutPy
+QMutPyFuzzer
 =====
 
 |Python Versions| |Build Status| |Coverage Status| |Code Climate|
@@ -159,6 +159,21 @@ operation. We should change it, eg:
 
 We can run MutPy again and now mutation score is equal 100%.
 
+Fuzz testing
+----------------
+From article at Wikipedia:
+
+    **Fuzz testing or fuzzing** is an automated software testing technique that involves providing invalid, unexpected, or random data as inputs to a computer program. The program is then monitored for exceptions such as crashes, failing built-in code assertions, or potential memory leaks. Typically, fuzzers are used to test programs that take structured inputs. This structure is specified, e.g., in a file format or protocol and distinguishes valid from invalid input. An effective fuzzer generates semi-valid inputs that are "valid enough" in that they are not directly rejected by the parser, but do create unexpected behaviors deeper in the program and are "invalid enough" to expose corner cases that have not been properly dealt with.
+
+-  ``--fuzz_shots FUZZ_SHOTS`` - Number of shots want to try for each test per survived mutant.
+-  ``--int_range INT_RANGE`` - The maximum value that a random integer can have while fuzzing.
+-  ``--string_range STRING_RANGE`` - Number of maximum characters a string can have while fuzzing.
+
+
+The first argument, apart from defining the fuzz shots, is the one that activates the fuzzing functionality. After all the mutation process is done the tool checks if the fuzz\_shots option was given and decides to start fuzzing or not. This variable was developed to give the user the possibility to decide how much tries should the fuzzer do with each non killed mutant.
+
+The other options are included in order to provide a the possibility to edit some characteristics of the fuzzer. The first one defines the maximum possible value for integer variables. The last one, defines the maximum possible length for the string variables. Both of them have a default value, so that there is no need for the user to specify them. Since for now the only supported input variables are integers, strings and lists of them, there is no need to specify more characteristics.
+
 Command-line arguments
 ----------------------
 
@@ -198,6 +213,9 @@ List of all arguments with which you can run MutPy:
 -  ``--list-hom-strategies`` - list available HOM strategies,
 -  ``--mutation-number MUTATION_NUMBER`` - run only one mutation (debug
    purpose).
+-  ``--fuzz_shots FUZZ_SHOTS`` - Number of shots want to try for each test per survived mutant.
+-  ``--int_range INT_RANGE`` - The maximum value that a random integer can have while fuzzing.
+-  ``--string_range STRING_RANGE`` - Number of maximum characters a string can have while fuzzing.
 
 Mutation operators
 ------------------
