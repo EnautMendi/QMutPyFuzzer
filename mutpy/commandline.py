@@ -72,6 +72,10 @@ def run_mutpy(parser):
             if cfg.runner == 'unittest':
                 errors = geterrors()
                 start = len(mutation_controller.survived_mutants)
+                registry = open("registry.txt", "a")
+                registry.write('Number of mutants that survived: ' + str(start))
+                registry.write('\n[*] Start Fuzzing...')
+                registry.close()
                 print('Number of mutants that survived: ' + str(start))
                 print('[*] Start Fuzzing...')
                 count = 0
@@ -90,13 +94,13 @@ def run_mutpy(parser):
                 newTests.clear()
                 left = len(mutation_controller.survived_mutants)
                 print('\n[*] Number of mutants that were killed by the fuzzer: ' + str(start - left))
-                print('[*]Number of mutants still alive: ' + str(left))
+                print('[*] Number of mutants still alive: ' + str(left))
             else:
                 print("The fuzzer option is supported only for Unittest")
     else:
         parser.print_usage()
 def geterrors():
-    errors = ["input", "Insufficient memory", "BackendNotFoundError", "ValueError"]
+    errors = ["input", "Insufficient memory", "BackendNotFoundError", "ValueError", "self.assertTrue(measurement in values)", "self.assertTrue(modinv == expected)", "self.assertListEqual"]
     return errors
 def create_new_test(test, newFile, shots, range_int, range_strings):
     fuzzer = controller.FuzzController()
@@ -125,7 +129,7 @@ def create_new_test(test, newFile, shots, range_int, range_strings):
 def checkLine(line, condition):
     if "@idata" in line:
         condition = 1
-    elif "@unpack" in line:
+    elif ("@unpack" in line) and (condition == 1):
         condition = 2
     elif condition == 1:
         condition = 1

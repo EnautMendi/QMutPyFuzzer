@@ -181,7 +181,10 @@ class MutationController(views.ViewNotifier):
     def fuzz(self, test_loader, runner_cls, mutate_covered, errors):
         toremove=list(())
         self.runner = runner_cls(test_loader, self.timeout_factor, self.stdout_manager, mutate_covered)
+        count = 0
         for mutant in self.survived_mutants:
+            count = count + 1
+            print("\nThe mutant number " + str(count) + ' is being fuzzed')
             result, duration = self.runner.run_tests_with_mutant_fuzz(100,mutant, errors)
             if result:
                 if result.is_survived==False:
@@ -230,7 +233,7 @@ class FuzzController():
                         self.getintegers(shots, range_int)
                         for y in range(len(data), len(newdata)):
                             newdata[y].append(self.newintegers[y - len(data)])
-                elif type(value) is str:
+                elif (type(value) is str) and ("aer_simulator" not in value):
                     if len(newdata) == len(data):
                         self.newstrings.clear()
                         self.getstrings(shots, range_strings)
